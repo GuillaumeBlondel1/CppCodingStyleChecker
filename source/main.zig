@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const path_manager = @import("path_manager.zig");
+const folder_content = @import("folders/subs.zig");
 
 const ExecException = error {
     cannot_write_in_file
@@ -8,20 +9,29 @@ const ExecException = error {
 
 fn exec_first_arg(arg: []const u8) ![]const u8
 {
-    var results: path_manager.PathResults = .{.type = undefined};
+    var results: path_manager.PathResults = .{
+        .type = undefined,
+        .elem = undefined};
+    defer results.close();
     
     path_manager.get_results(arg, &results) catch |err| {
         if (err == path_manager.ResultsException.no_such_file_or_directory) {
             std.debug.print("Cannot access '{s}': No such file or directory\n", .{arg});
         }
-        return path_manager.ResultsException.no_such_file_or_directory;
+        return err;
     };
+    if (results.type == path_manager.PathType.FOLDER) {
+        try folder_content.get_subs(arg, &results);
+    }
     return "TEST\n";
 }
 
 fn exec_second_arg(arg: []const u8, report: []const u8) !void
 {
-    var results: path_manager.PathResults = .{.type = undefined};
+    var results: path_manager.PathResults = .{
+        .type = undefined,
+        .elem = undefined};
+    defer results.close();
 
     path_manager.get_results(arg, &results) catch |err| {
         if (err == path_manager.ResultsException.no_such_file_or_directory) {

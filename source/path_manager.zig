@@ -1,11 +1,6 @@
 const std = @import("std");
 
-// ---- //
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const allocator = gpa.allocator();
-
-// ---- //
+const allocator = @import("allocator.zig");
 
 pub const ResultsException = error {
     no_such_file_or_directory,
@@ -24,7 +19,7 @@ pub const PathResults = struct {
 
     pub fn set_dir(self: *PathResults, dir: *const std.fs.Dir) !void
     {
-        const cpy_dir = try allocator.create(std.fs.Dir);
+        const cpy_dir = try allocator.gpa_allocator.create(std.fs.Dir);
 
         std.mem.copyForwards(u8,std.mem.asBytes(cpy_dir),std.mem.asBytes(dir));
         self.elem = @ptrCast(cpy_dir);
@@ -32,7 +27,7 @@ pub const PathResults = struct {
 
     pub fn set_file(self: *PathResults, file: *const std.fs.File) !void
     {
-        const cpy_file = try allocator.create(std.fs.File);
+        const cpy_file = try allocator.gpa_allocator.create(std.fs.File);
 
         std.mem.copyForwards(u8,std.mem.asBytes(cpy_file),std.mem.asBytes(file));
         self.elem = @ptrCast(cpy_file);
@@ -63,14 +58,14 @@ pub const PathResults = struct {
                 return;
             };
             dir.close();
-            allocator.destroy(dir);
+            allocator.gpa_allocator.destroy(dir);
         }
         if (self.type == PathType.FILE) {
             var file = self.get_file() catch {
                 return;
             };
             file.close();
-            allocator.destroy(file);
+            allocator.gpa_allocator.destroy(file);
         }
     }
 };

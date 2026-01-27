@@ -1,7 +1,10 @@
 const std = @import("std");
 
+const allocator = @import("allocator.zig");
 const path_manager = @import("path_manager.zig");
 const folder_content = @import("folders/subs.zig");
+const read_file = @import("files/read.zig");
+const spliters = @import("utils/spliters.zig");
 
 const ExecException = error {
     cannot_write_in_file
@@ -22,6 +25,12 @@ fn exec_first_arg(arg: []const u8) ![]const u8
     };
     if (results.type == path_manager.PathType.FOLDER) {
         try folder_content.get_subs(arg, &results);
+    }
+    if (results.type == path_manager.PathType.FILE) {
+        const content = try read_file.read_from_file(try results.get_file());
+        defer allocator.gpa_allocator.free(content);
+        var lines = try spliters.split_lines(content);
+        defer spliters.deinit(&lines);
     }
     return "TEST\n";
 }
@@ -47,6 +56,7 @@ fn exec_second_arg(arg: []const u8, report: []const u8) !void
 }
 
 pub fn main() !u8 {
+    defer allocator.deinit_allocator();
     const nb_args = std.os.argv.len;
 
     if (nb_args < 2 or nb_args > 3) {

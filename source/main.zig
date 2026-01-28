@@ -52,7 +52,15 @@ fn exec_second_arg(arg: []const u8, report: []const u8) !void
         std.debug.print("Cannot create 'report.txt' cause the path is a file\n", .{});
         return ExecException.cannot_write_in_file;
     }
-    std.debug.print("WriteAll : {s}", .{report});
+    const file_name = "report.txt";
+    const path = try allocator.gpa_allocator.alloc(u8, arg.len + file_name.len + 1);
+    defer allocator.gpa_allocator.free(path);
+    std.mem.copyForwards(u8, path[0..], arg);
+    path[arg.len] = '/';
+    std.mem.copyForwards(u8, path[(arg.len + 1)..], file_name);
+
+    var write_file = try std.fs.cwd().createFile(path, .{.truncate = true});
+    _ = try write_file.writeAll(report);
 }
 
 pub fn main() !u8 {
@@ -77,6 +85,6 @@ pub fn main() !u8 {
         return 1;
     };
     std.debug.print("Coding styles errors founds : {d}\nMore informations into folder '{s}'\n",
-        .{0, std.os.argv[1]});
+        .{0, std.os.argv[2]});
     return 0;
 }

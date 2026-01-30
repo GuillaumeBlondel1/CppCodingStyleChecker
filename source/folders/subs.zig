@@ -4,14 +4,7 @@ const allocator = @import("../allocator.zig");
 const path_manager = @import("../path_manager.zig");
 const read_file = @import("../files/read.zig");
 const spliters = @import("../utils/spliters.zig");
-
-// ---- //
-
-const simple_header_ext: []const u8 = ".h";
-const cpp_header_ext: []const u8 = ".hpp";
-const cpp_file_ext: []const u8 = ".cpp";
-
-// ---- //
+const extensions = @import("../files/extensions.zig");
 
 fn get_content(parent: []const u8, walker: *std.fs.Dir.Walker) !std.array_list.Aligned([]const u8, null)
 {
@@ -30,22 +23,6 @@ fn get_content(parent: []const u8, walker: *std.fs.Dir.Walker) !std.array_list.A
     return sources_paths;
 }
 
-fn check_ext(path: []const u8) bool
-{
-    const ext = std.fs.path.extension(path);
-
-    if (std.mem.eql(u8, ext, simple_header_ext)) {
-        return true;
-    }
-    if (std.mem.eql(u8, ext, cpp_header_ext)) {
-        return true;
-    }
-    if (std.mem.eql(u8, ext, cpp_file_ext)) {
-        return true;
-    }
-    return false;
-}
-
 pub fn get_subs(parent: []const u8, results: *const path_manager.PathResults) !void
 {
     var dir = try results.get_dir();
@@ -62,7 +39,7 @@ pub fn get_subs(parent: []const u8, results: *const path_manager.PathResults) !v
     }
 
     for (sources_paths.items) |path| {
-        if (!check_ext(path)) {
+        if (!extensions.check_ext(path)) {
             continue;
         }
         const content = try read_file.read_from_path(path);

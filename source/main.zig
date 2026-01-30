@@ -5,9 +5,11 @@ const path_manager = @import("path_manager.zig");
 const folder_content = @import("folders/subs.zig");
 const read_file = @import("files/read.zig");
 const spliters = @import("utils/spliters.zig");
+const extensions = @import("files/extensions.zig");
 
 const ExecException = error {
-    cannot_write_in_file
+    cannot_write_in_file,
+    wrong_file_extension
 };
 
 fn exec_first_arg(arg: []const u8) ![]const u8
@@ -27,6 +29,10 @@ fn exec_first_arg(arg: []const u8) ![]const u8
         try folder_content.get_subs(arg, &results);
     }
     if (results.type == path_manager.PathType.FILE) {
+        if (!extensions.check_ext(arg)) {
+            std.debug.print("Wrong file extension\n", .{});
+            return ExecException.wrong_file_extension;
+        }
         const content = try read_file.read_from_file(try results.get_file());
         defer allocator.gpa_allocator.free(content);
         var lines = try spliters.split_lines(content);
